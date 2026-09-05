@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Todos</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">✓ Todos</div>
+
+    <!-- The current filter lives on these buttons as a data attribute.
+         app.js reads it back out of the DOM. -->
+    <nav id="lists">
+      <button class="nav-item active" data-list="All"      onclick="pickList(0)">All        <span class="count">0</span></button>
+      <button class="nav-item"        data-list="Inbox"    onclick="pickList(1)">Inbox      <span class="count">0</span></button>
+      <button class="nav-item"        data-list="Work"     onclick="pickList(2)">Work       <span class="count">0</span></button>
+      <button class="nav-item"        data-list="Personal" onclick="pickList(3)">Personal   <span class="count">0</span></button>
+      <button class="nav-item"        data-list="Someday"  onclick="pickList(4)">Someday    <span class="count">0</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="rev">rev <span id="rev">–</span></div>
+      <div class="rev">offset <span id="offset">–</span> b</div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <header class="page-head">
+      <h1>Today</h1>
+      <div class="head-right">
+        <input id="q" class="search" placeholder="Search…" oninput="render()">
+        <select id="sort" class="select" onchange="loadFromServer()">
+          <option value="created_at">Newest</option>
+          <option value="due_date">Due date</option>
+          <option value="priority_num">Priority</option>
+          <option value="title">Title</option>
+        </select>
+      </div>
+    </header>
+
+    <form class="composer" onsubmit="return addTodo()">
+      <input id="new-title" placeholder="What needs doing?" autocomplete="off">
+      <select id="new-list">
+        <option>Inbox</option><option>Work</option><option>Personal</option><option>Someday</option>
+      </select>
+      <select id="new-pri">
+        <option value="1">Low</option>
+        <option value="2" selected>Normal</option>
+        <option value="3">High</option>
+      </select>
+      <input id="new-due" type="date">
+      <button class="primary" type="submit">Add</button>
+    </form>
+    <div id="err" class="err"></div>
+
+    <div class="toolbar">
+      <label><input type="checkbox" id="hide-done" onchange="render()"> Hide completed</label>
+      <button class="ghost" onclick="clearDone()">Clear completed</button>
+      <button class="ghost" onclick="bumpStale()">Bump stale</button>
+    </div>
+
+    <ul id="rows" class="rows"></ul>
+    <p id="empty" class="empty">Nothing here.</p>
+
+  </main>
+
+  <aside class="rail">
+    <section class="card">
+      <h2>Stats</h2>
+      <!-- These get filled by re-reading the rendered rows out of the DOM. -->
+      <div class="stat"><span>Open</span><b id="s-open">0</b></div>
+      <div class="stat"><span>Done</span><b id="s-done">0</b></div>
+      <div class="stat"><span>Overdue</span><b id="s-over" class="bad">0</b></div>
+      <div class="stat"><span>Urgency</span><b id="s-urg">0</b></div>
+      <div class="bar"><i id="s-bar"></i></div>
+    </section>
+
+    <section class="card">
+      <h2>Due soon</h2>
+      <ul id="soon" class="soon"></ul>
+    </section>
+  </aside>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

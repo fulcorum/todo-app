@@ -1,47 +1,42 @@
 # todo-app
 
-A small todo web app. No dependencies, no build step — Node's stdlib on the
-server, plain HTML/CSS/JS in the browser.
+A companion repo for the video series. One small todo app, twice.
 
 ```
-node server.js      # http://localhost:4321
+before/    the starting point — frozen baseline, never edited
+after/     the same app, where every change in the series lands
 ```
 
-## Layout
+Both are dependency-free: Node's stdlib on the server, plain HTML/CSS/JS in the
+browser. No build step, nothing to install.
+
+## Running them
+
+They listen on different ports so you can keep both open side by side.
 
 ```
-server.js           dumb row store over db.json
-db.json             the data
-public/index.html   markup
-public/style.css    styling
-public/app.js       everything else
+node before/server.js     # http://localhost:4321
+node after/server.js      # http://localhost:4322
 ```
 
-## A note on the code
+Each directory has its own `db.json`, so edits in one never touch the other.
 
-This project is deliberately built the wrong way. It is a teaching artifact,
-not a reference. Known and intentional:
+## Seeing the change
 
-- **All business logic is in the browser.** The urgency score, overdue rules,
-  duplicate detection, validation, the stale-bump promotion, ID assignment —
-  every one of them lives in `public/app.js`. The server can't answer a single
-  question about a todo.
-- **The storage schema is the API.** Rows go over the wire verbatim:
-  `snake_case` columns, `is_done` as `0`/`1`, epoch-millisecond timestamps, and
-  the internal `_rev` / `_file_offset` fields. `GET /api/todos?order_by=` takes
-  a raw column name.
-- **Writes are a full-table `PUT`.** The client owns the truth and replays all
-  of it on every change. `DELETE` takes an array index.
-- **The DOM is the state store.** The active filter is a `data-` attribute; the
-  stats panel is computed by scraping the rows that were just rendered rather
-  than the data behind them.
-- **Rows are wired by rendered position.** `toggle(i)` / `removeAt(i)` take the
-  index in the visible list, then look the id back up out of the DOM node.
-- **Brittle in the small.** `PRI` is a label array indexed by priority number
-  so slot 0 is a hole, IDs are `max + 1`, dates are string-sliced and divided
-  by `86400000`, sorting mutates the global array, the `localStorage` cache is
-  never invalidated, and a 5-second `setInterval` re-renders over whatever you
-  were doing.
+`after/` starts as a byte-for-byte copy of `before/` (the port is the only
+difference), which makes the diff the whole story:
 
-If you're looking for the seams to pull on, start with `urgency()` — it is the
-one piece of real domain logic and it's furthest from the data.
+```
+diff -ru before after
+```
+
+## The app
+
+Add, complete, and delete todos; filter by list; search; sort; hide or clear
+completed. The sidebar shows live per-list counts, the rail shows stats and
+what's due soon, and rows are ranked by a computed urgency score.
+
+It works. It is also built the wrong way on purpose — all the domain logic sits
+in the browser, the storage schema is exposed as the API, and the DOM doubles
+as the state store. `before/README.md` has the full list of what's wrong and
+why; that list is the series outline.
