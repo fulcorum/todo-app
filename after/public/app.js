@@ -27,7 +27,28 @@ function maxPriority() {
 }
 
 var DAY = 86400000;
-var LISTS = ['All', 'Inbox', 'Work', 'Personal', 'Someday'];
+
+// The one place lists are defined. The sidebar buttons, their counts, the
+// composer dropdown, the page heading, and the urgency damping are all derived
+// from this array.
+// `pseudo` marks the catch-all view: it matches every row and is not a list
+// you can file a todo into. `damp` divides the urgency score, so a list can be
+// de-prioritised without a name check in urgency().
+var LISTS = [
+  { name: 'All',      pseudo: true, heading: 'Today' },
+  { name: 'Inbox',    preselect: true },
+  { name: 'Work' },
+  { name: 'Personal' },
+  { name: 'Someday',  damp: 3 },
+  { name: 'Errands' }
+];
+
+function listDef(name) {
+  for (var i = 0; i < LISTS.length; i++) {
+    if (LISTS[i].name === name) return LISTS[i];
+  }
+  return null;   // list_name the server accepted that no longer exists here
+}
 
 // ---------------------------------------------------------------------------
 // loading
@@ -88,7 +109,8 @@ function urgency(t) {
   else if (d === 0) s += 30;
   else if (d <= 2) s += 18;
   else if (d <= 7) s += 8;
-  if (t.list_name === 'Someday') s = Math.floor(s / 3);
+  var l = listDef(t.list_name);
+  if (l && l.damp) s = Math.floor(s / l.damp);
   var age = Math.floor((Date.now() - t.created_at) / DAY);
   if (age > 14) s += 5;                         // stale nag
   return s;
@@ -191,11 +213,13 @@ function bumpStale() {
   save();
 }
 
-function pickList(n) {
+function pickList(name) {
   var items = document.querySelectorAll('.nav-item');
-  for (var i = 0; i < items.length; i++) items[i].className = 'nav-item';
-  items[n].className = 'nav-item active';
-  document.querySelector('h1').textContent = LISTS[n] === 'All' ? 'Today' : LISTS[n];
+  for (var i = 0; i < items.length; i++) {
+    items[i].className = items[i].getAttribute('data-list') === name ? 'nav-item active' : 'nav-item';
+  }
+  var l = listDef(name);
+  document.querySelector('h1').textContent = (l && l.heading) || name;
   render();
 }
 
@@ -210,6 +234,7 @@ function currentList() {
 
 function render() {
   var list = currentList();
+  var def = listDef(list);
   var q = document.getElementById('q').value.toLowerCase();
   var hideDone = document.getElementById('hide-done').checked;
 
@@ -220,7 +245,7 @@ function render() {
   var shown = 0;
   for (var i = 0; i < ROWS.length; i++) {
     var t = ROWS[i];
-    if (list !== 'All' && t.list_name !== list) continue;
+    if (!(def && def.pseudo) && t.list_name !== list) continue;
     if (q && t.title.toLowerCase().indexOf(q) === -1) continue;
     if (hideDone && t.is_done === 1) continue;
 
@@ -263,10 +288,11 @@ function paintCounts() {
   var items = document.querySelectorAll('.nav-item');
   for (var i = 0; i < items.length; i++) {
     var name = items[i].getAttribute('data-list');
+    var def = listDef(name);
     var n = 0;
     for (var j = 0; j < ROWS.length; j++) {
       if (ROWS[j].is_done === 1) continue;
-      if (name === 'All' || ROWS[j].list_name === name) n++;
+      if ((def && def.pseudo) || ROWS[j].list_name === name) n++;
     }
     items[i].querySelector('.count').textContent = n;
   }
@@ -304,8 +330,35 @@ function paintSoon() {
   document.getElementById('soon').innerHTML = out || '<li><span>Nothing due.</span></li>';
 }
 
-// Built once at startup, not from render() — render() runs on a 5s timer and
-// rebuilding the options there would stomp on whatever the user had selected.
+// The sidebar and both dropdowns are built once at startup, not from render()
+// — render() runs on a 5s timer and rebuilding them there would stomp on the
+// active list and on whatever the user had selected.
+function paintLists() {
+  var html = '';
+  var heading = '';
+  for (var i = 0; i < LISTS.length; i++) {
+    var l = LISTS[i];
+    html += '<button class="nav-item' + (l.pseudo ? ' active' : '') + '" data-list="' + l.name + '"'
+          + ' onclick="pickList(\'' + l.name + '\')">' + l.name
+          + '<span class="count">0</span></button>';
+    if (l.pseudo) heading = l.heading || l.name;
+  }
+  document.getElementById('lists').innerHTML = html;
+  // The first paint's heading comes from the same array as the buttons —
+  // pickList() writes it on click, but nothing had written it before then.
+  document.querySelector('h1').textContent = heading;
+}
+
+function paintListOptions() {
+  var html = '';
+  for (var i = 0; i < LISTS.length; i++) {
+    var l = LISTS[i];
+    if (l.pseudo) continue;                      // can't file a todo into "All"
+    html += '<option' + (l.preselect ? ' selected' : '') + '>' + l.name + '</option>';
+  }
+  document.getElementById('new-list').innerHTML = html;
+}
+
 function paintPriorityOptions() {
   var html = '';
   for (var i = 0; i < PRIORITIES.length; i++) {
@@ -318,6 +371,8 @@ function paintPriorityOptions() {
 
 // ---------------------------------------------------------------------------
 
+paintLists();
+paintListOptions();
 paintPriorityOptions();
 loadFromServer();
 // Re-render on a timer so relative dates stay fresh. Also stomps on anything

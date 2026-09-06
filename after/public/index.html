@@ -13,15 +13,9 @@
   <aside class="sidebar">
     <div class="brand">✓ Todos</div>
 
-    <!-- The current filter lives on these buttons as a data attribute.
-         app.js reads it back out of the DOM. -->
-    <nav id="lists">
-      <button class="nav-item active" data-list="All"      onclick="pickList(0)">All        <span class="count">0</span></button>
-      <button class="nav-item"        data-list="Inbox"    onclick="pickList(1)">Inbox      <span class="count">0</span></button>
-      <button class="nav-item"        data-list="Work"     onclick="pickList(2)">Work       <span class="count">0</span></button>
-      <button class="nav-item"        data-list="Personal" onclick="pickList(3)">Personal   <span class="count">0</span></button>
-      <button class="nav-item"        data-list="Someday"  onclick="pickList(4)">Someday    <span class="count">0</span></button>
-    </nav>
+    <!-- Buttons come from LISTS in app.js. The current filter lives on them as
+         a data attribute, which app.js reads back out of the DOM. -->
+    <nav id="lists"></nav>
 
     <div class="sidebar-foot">
       <div class="rev">rev <span id="rev">–</span></div>
@@ -32,7 +26,8 @@
   <main class="content">
 
     <header class="page-head">
-      <h1>Today</h1>
+      <!-- Filled from the pseudo list's heading in LISTS. -->
+      <h1></h1>
       <div class="head-right">
         <input id="q" class="search" placeholder="Search…" oninput="render()">
         <select id="sort" class="select" onchange="loadFromServer()">
@@ -46,10 +41,8 @@
 
     <form class="composer" onsubmit="return addTodo()">
       <input id="new-title" placeholder="What needs doing?" autocomplete="off">
-      <select id="new-list">
-        <option>Inbox</option><option>Work</option><option>Personal</option><option>Someday</option>
-      </select>
-      <!-- Options come from PRIORITIES in app.js. -->
+      <!-- Options come from LISTS and PRIORITIES in app.js. -->
+      <select id="new-list"></select>
       <select id="new-pri"></select>
       <input id="new-due" type="date">
       <button class="primary" type="submit">Add</button>
