@@ -65,9 +65,6 @@ input,select,button{font:inherit}
 .row .title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .row.done .title{color:var(--faint); text-decoration:line-through}
 .pill{font-size:11px; padding:2px 8px; border-radius:999px; background:var(--panel-2); color:var(--muted); border:1px solid var(--line); flex:none}
-.pri-3{color:var(--bad); border-color:#40252c}
-.pri-2{color:var(--muted)}
-.pri-1{color:var(--faint)}
 .due{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; flex:none}
 .due.over{color:var(--bad)}
 .due.soon{color:var(--warn)}

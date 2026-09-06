@@ -4,9 +4,27 @@ var ROWS = [];            // raw storage rows, straight from db.json
 var REV = 0;
 var TICK = null;
 
-// Priority is a number in the DB. The labels are an array indexed by it,
-// so index 0 is a hole nobody is allowed to use.
-var PRI = ['', 'Low', 'Normal', 'High'];
+// The one place priority levels are defined. The composer dropdown, the badge
+// colors, and the stale-bump ceiling are all derived from this array.
+var PRIORITIES = [
+  { num: 1, label: 'Low',    color: 'var(--faint)', border: 'var(--line)', bg: '' },
+  { num: 2, label: 'Normal', color: 'var(--muted)', border: 'var(--line)', bg: '', preselect: true },
+  { num: 3, label: 'High',   color: 'var(--warn)',  border: '#453a1f',     bg: '' },
+  { num: 4, label: 'Urgent', color: '#fff',         border: 'var(--bad)',  bg: 'var(--bad)' }
+];
+
+function priority(num) {
+  for (var i = 0; i < PRIORITIES.length; i++) {
+    if (PRIORITIES[i].num === num) return PRIORITIES[i];
+  }
+  return null;   // out-of-range value from the schema-free server
+}
+
+function maxPriority() {
+  var m = 0;
+  for (var i = 0; i < PRIORITIES.length; i++) if (PRIORITIES[i].num > m) m = PRIORITIES[i].num;
+  return m;
+}
 
 var DAY = 86400000;
 var LISTS = ['All', 'Inbox', 'Work', 'Personal', 'Someday'];
@@ -166,7 +184,7 @@ function clearDone() {
 function bumpStale() {
   for (var i = 0; i < ROWS.length; i++) {
     var t = ROWS[i];
-    if (t.is_done !== 1 && Math.floor((Date.now() - t.created_at) / DAY) > 14 && t.priority_num < 3) {
+    if (t.is_done !== 1 && Math.floor((Date.now() - t.created_at) / DAY) > 14 && t.priority_num < maxPriority()) {
       t.priority_num = t.priority_num + 1;
     }
   }
@@ -209,6 +227,10 @@ function render() {
     var d = daysUntil(t.due_date);
     var dueTxt = '';
     var dueCls = '';
+    var p = priority(t.priority_num);
+    var priStyle = p
+      ? 'color:' + p.color + ';border-color:' + p.border + (p.bg ? ';background:' + p.bg : '')
+      : '';
     if (t.due_date) {
       if (d < 0) { dueTxt = -d + 'd late'; dueCls = ' over'; }
       else if (d === 0) { dueTxt = 'today'; dueCls = ' soon'; }
@@ -220,7 +242,7 @@ function render() {
     html += '<li class="row' + (t.is_done === 1 ? ' done' : '') + '" data-id="' + t.id + '">'
       + '<input type="checkbox" onclick="toggle(' + shown + ')"' + (t.is_done === 1 ? ' checked' : '') + '>'
       + '<span class="title">' + t.title + '</span>'
-      + '<span class="pill pri-' + t.priority_num + '">' + PRI[t.priority_num] + '</span>'
+      + '<span class="pill" style="' + priStyle + '">' + (p ? p.label : '?') + '</span>'
       + '<span class="pill">' + t.list_name + '</span>'
       + '<span class="due' + dueCls + '">' + dueTxt + '</span>'
       + '<span class="score">' + urgency(t) + '</span>'
@@ -282,8 +304,21 @@ function paintSoon() {
   document.getElementById('soon').innerHTML = out || '<li><span>Nothing due.</span></li>';
 }
 
+// Built once at startup, not from render() — render() runs on a 5s timer and
+// rebuilding the options there would stomp on whatever the user had selected.
+function paintPriorityOptions() {
+  var html = '';
+  for (var i = 0; i < PRIORITIES.length; i++) {
+    var p = PRIORITIES[i];
+    html += '<option value="' + p.num + '"' + (p.preselect ? ' selected' : '') + '>'
+          + p.label + '</option>';
+  }
+  document.getElementById('new-pri').innerHTML = html;
+}
+
 // ---------------------------------------------------------------------------
 
+paintPriorityOptions();
 loadFromServer();
 // Re-render on a timer so relative dates stay fresh. Also stomps on anything
 // you were in the middle of.

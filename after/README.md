@@ -40,11 +40,10 @@ the series goes; strike them off here as you do.
   than the data behind them.
 - **Rows are wired by rendered position.** `toggle(i)` / `removeAt(i)` take the
   index in the visible list, then look the id back up out of the DOM node.
-- **Brittle in the small.** `PRI` is a label array indexed by priority number
-  so slot 0 is a hole, IDs are `max + 1`, dates are string-sliced and divided
-  by `86400000`, sorting mutates the global array, the `localStorage` cache is
-  never invalidated, and a 5-second `setInterval` re-renders over whatever you
-  were doing.
+- **Brittle in the small.** IDs are `max + 1`, dates are string-sliced and
+  divided by `86400000`, sorting mutates the global array, the `localStorage`
+  cache is never invalidated, and a 5-second `setInterval` re-renders over
+  whatever you were doing.
 
 If you're looking for the seams to pull on, start with `urgency()` — it is the
 one piece of real domain logic and it's furthest from the data.
